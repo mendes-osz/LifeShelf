@@ -61,7 +61,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shelflife.ui.theme.ShelflifeTheme
+import com.example.shelflife.ui.theme.*
+import com.example.shelflife.model.Amigo
+import com.example.shelflife.ui.theme.screens.TelaRanking
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,28 +71,26 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ShelflifeTheme {
+                val amigos = remember {
+                    mutableStateListOf(
+                        Amigo(0, "Ovin", 5400, imagemRes = R.drawable.amigo_0, livrosLidos = 12, sequenciaDias = 21),
+                        Amigo(1, "Cogumelito", 8550, imagemRes = R.drawable.amigo_1, livrosLidos = 7, sequenciaDias = 4),
+                        Amigo(2, "Sapinho", 3000, imagemRes = R.drawable.amigo_2, livrosLidos = 15, sequenciaDias = 1),
+                        Amigo(3, "Nome", 1200, imagemRes = R.drawable.amigo_3, livrosLidos = 3, sequenciaDias = 9)
+                    )
+                }
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = { BarraNavegacao() }
                 ) { innerPadding ->
-                    TelaInicio(modifier = Modifier.padding(innerPadding))
-                    // TelaPerfil(modifier = Modifier.padding(innerPadding))
-                    // TelaEstante(modifier = Modifier.padding(innerPadding))
-                    // TelaDetalhes(modifier = Modifier.padding(innerPadding))
+                    TelaRanking(amigos = amigos, modifier = Modifier.padding(innerPadding))
                 }
             }
         }
     }
 }
 
-private val CorFundo = Color(0xFF4E3B31)
-private val CorCartao = Color(0xFF3A2C24)
-private val CorTextoSecundario = Color(0xFFB0A79E)
-private val CorDestaque = Color(0xFFC08552)
-private val CorPlaceholder = Color(0xFF6B4F3F)
-
 data class Livro(val id: Int, val titulo: String)
-data class Amigo(val id: Int, val nome: String, val emoji: String)
 data class LivroHome(val id: Int, val titulo: String, @DrawableRes val imagemRes: Int? = null)
 data class AmigoHome(val id: Int, val nome: String, @DrawableRes val imagemRes: Int? = null, val emoji: String = "🙂")
 
@@ -109,9 +109,9 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 
     val amigos = remember {
         listOf(
-            Amigo(0, "Ovin", "🐣"),
-            Amigo(1, "Cogumelito", "🍄"),
-            Amigo(2, "Sapinho", "🐸")
+            Amigo(0, "Ovin", 5400, "🐣"),
+            Amigo(1, "Cogumelito", 8550, "🍄"),
+            Amigo(2, "Sapinho", 3000, "🐸")
         )
     }
 
