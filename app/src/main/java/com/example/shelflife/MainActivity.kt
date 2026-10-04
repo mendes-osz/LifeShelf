@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.example.shelflife.ui.theme.*
 import com.example.shelflife.model.Amigo
 import com.example.shelflife.ui.theme.screens.TelaRanking
+import com.example.shelflife.ui.theme.screens.TelaAmigos
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +84,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = { BarraNavegacao() }
                 ) { innerPadding ->
-                    TelaRanking(amigos = amigos, modifier = Modifier.padding(innerPadding))
+                    //TelaRanking(amigos = amigos, modifier = Modifier.padding(innerPadding))
+                    TelaAmigos(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
