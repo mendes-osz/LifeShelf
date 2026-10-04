@@ -1,34 +1,16 @@
 package com.example.shelflife.ui.theme.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,9 +35,15 @@ enum class CriterioRanking(val rotulo: String) {
 }
 
 @Composable
-fun TelaRanking(amigos: List<Amigo>, modifier: Modifier = Modifier) {
+fun TelaRanking(
+    amigos: List<Amigo>,
+    aoClicarAmigo: (Amigo) -> Unit,
+    aoRemoverAmigo: (Amigo) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var criterio by remember { mutableStateOf(CriterioRanking.TEMPO) }
     var busca by remember { mutableStateOf("") }
+    var amigoParaRemover by remember { mutableStateOf<Amigo?>(null) }
 
     val ordenados = when (criterio) {
         CriterioRanking.TEMPO -> amigos.sortedByDescending { it.minutosLidos }
@@ -128,7 +116,10 @@ fun TelaRanking(amigos: List<Amigo>, modifier: Modifier = Modifier) {
 
         if (visiveis.isEmpty()) {
             Text(
-                text = "Nenhum amigo encontrado.",
+                text = if (amigos.isEmpty())
+                    "Você ainda não tem amigos. Adicione alguém na aba Amigos."
+                else
+                    "Nenhum amigo encontrado.",
                 color = CorTextoSecundario,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 16.dp)
@@ -139,18 +130,47 @@ fun TelaRanking(amigos: List<Amigo>, modifier: Modifier = Modifier) {
                     ItemRanking(
                         posicao = item.index + 1,
                         amigo = item.value,
-                        criterio = criterio
+                        criterio = criterio,
+                        aoClicar = { aoClicarAmigo(item.value) },
+                        aoClicarLongo = { amigoParaRemover = item.value }
                     )
                 }
             }
         }
     }
+
+    amigoParaRemover?.let { amigo ->
+        AlertDialog(
+            onDismissRequest = { amigoParaRemover = null },
+            title = { Text("Remover amigo?") },
+            text = { Text("${amigo.nome} sairá do seu ranking.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    aoRemoverAmigo(amigo)
+                    amigoParaRemover = null
+                }) { Text("Remover") }
+            },
+            dismissButton = {
+                TextButton(onClick = { amigoParaRemover = null }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ItemRanking(posicao: Int, amigo: Amigo, criterio: CriterioRanking) {
+private fun ItemRanking(
+    posicao: Int,
+    amigo: Amigo,
+    criterio: CriterioRanking,
+    aoClicar: () -> Unit,
+    aoClicarLongo: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .combinedClickable(onClick = aoClicar, onLongClick = aoClicarLongo),
         colors = CardDefaults.cardColors(containerColor = CorCartao)
     ) {
         Row(
@@ -218,10 +238,12 @@ private fun formatarTempo(minutos: Int): String = "${minutos / 60}h ${minutos % 
 private fun PreviaTelaRanking() {
     TelaRanking(
         amigos = listOf(
-            Amigo(0, "Ovin", 5400, imagemRes = R.drawable.amigo_0, livrosLidos = 12, sequenciaDias = 21),
-            Amigo(1, "Cogumelito", 8550, imagemRes = R.drawable.amigo_1, livrosLidos = 7, sequenciaDias = 4),
+            Amigo(0, "Ovin", 5400, imagemRes = R.drawable.amigo_0, livrosLidos = 12, sequenciaDias = 4),
+            Amigo(1, "Cogumelito", 8550, imagemRes = R.drawable.amigo_1, livrosLidos = 7, sequenciaDias = 21),
             Amigo(2, "Sapinho", 3000, imagemRes = R.drawable.amigo_2, livrosLidos = 15, sequenciaDias = 1),
             Amigo(3, "Nome", 1200, imagemRes = R.drawable.amigo_3, livrosLidos = 3, sequenciaDias = 9)
-        )
+        ),
+        aoClicarAmigo = {},
+        aoRemoverAmigo = {}
     )
 }

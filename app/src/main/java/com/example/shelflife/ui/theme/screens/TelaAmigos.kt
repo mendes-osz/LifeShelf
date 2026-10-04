@@ -2,22 +2,10 @@ package com.example.shelflife.ui.theme.screens
 
 import android.content.Context
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -27,25 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -108,42 +79,12 @@ object AmigosStorage {
 
 @Composable
 fun TelaAmigos(
-    modifier: Modifier = Modifier,
-    aoAbrirDetalhe: ((Int) -> Unit)? = null,
-    aoAdicionar: (Amigo) -> Unit = {}
+    amigos: List<Amigo>,
+    aoAdicionar: (Amigo) -> Unit,
+    aoRemover: (Amigo) -> Unit,
+    aoAbrirDetalhe: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var detalheAberto by remember { mutableStateOf<Int?>(null) }
-    val idDetalhe = detalheAberto
-
-    BackHandler(enabled = idDetalhe != null) { detalheAberto = null }
-
-    if (idDetalhe != null) {
-        TelaDetalheAmigo(
-            amigoId = idDetalhe,
-            aoVoltar = { detalheAberto = null },
-            modifier = modifier
-        )
-    } else {
-        ListaDeAmigos(
-            modifier = modifier,
-            aoAbrir = { id ->
-                if (aoAbrirDetalhe != null) aoAbrirDetalhe(id) else detalheAberto = id
-            },
-            aoAdicionar = aoAdicionar
-        )
-    }
-}
-
-@Composable
-private fun ListaDeAmigos(
-    modifier: Modifier,
-    aoAbrir: (Int) -> Unit,
-    aoAdicionar: (Amigo) -> Unit
-) {
-    val context = LocalContext.current
-    val amigos = remember {
-        mutableStateListOf<Amigo>().apply { addAll(AmigosStorage.carregar(context)) }
-    }
     var busca by remember { mutableStateOf("") }
 
     val termo = busca.trim()
@@ -236,11 +177,7 @@ private fun ListaDeAmigos(
                         Text(text = "Amigo ✓", color = CorTextoSecundario, fontSize = 13.sp)
                     } else {
                         Button(
-                            onClick = {
-                                amigos.add(0, usuario)
-                                AmigosStorage.salvar(context, amigos)
-                                aoAdicionar(usuario)
-                            },
+                            onClick = { aoAdicionar(usuario) },
                             colors = ButtonDefaults.buttonColors(containerColor = CorDestaque)
                         ) {
                             Text(text = "Adicionar", color = Color.White)
@@ -270,13 +207,8 @@ private fun ListaDeAmigos(
             }
         } else {
             items(amigos, key = { "amigo-${it.id}" }) { amigo ->
-                CartaoUsuario(usuario = amigo, aoClicar = { aoAbrir(amigo.id) }) {
-                    IconButton(
-                        onClick = {
-                            amigos.remove(amigo)
-                            AmigosStorage.salvar(context, amigos)
-                        }
-                    ) {
+                CartaoUsuario(usuario = amigo, aoClicar = { aoAbrirDetalhe(amigo.id) }) {
+                    IconButton(onClick = { aoRemover(amigo) }) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Remover ${amigo.nome}",
@@ -292,14 +224,16 @@ private fun ListaDeAmigos(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TelaDetalheAmigo(
-    amigoId: Int,
+    amigo: Amigo?,
+    amigos: List<Amigo>,
     aoVoltar: () -> Unit,
+    aoRemover: (Amigo) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val amigosAtuais = remember { AmigosStorage.carregar(context) }
-    val amigo = amigosAtuais.firstOrNull { it.id == amigoId }
-    var nota by remember(amigoId) { mutableStateOf(AmigosStorage.carregarNota(context, amigoId)) }
+    var nota by remember(amigo?.id) {
+        mutableStateOf(amigo?.let { AmigosStorage.carregarNota(context, it.id) } ?: "")
+    }
 
     Column(
         modifier = modifier
@@ -359,11 +293,11 @@ fun TelaDetalheAmigo(
                 } else {
                     "—"
                 }
-                CartaoInfo(titulo = "Entre os seus ${amigosAtuais.size} amigos") {
+                CartaoInfo(titulo = "Entre os seus ${amigos.size} amigos") {
                     LinhaInfo("Tempo médio por livro", mediaPorLivro)
-                    LinhaInfo("Posição em tempo", posicao(amigosAtuais, amigo) { it.minutosLidos })
-                    LinhaInfo("Posição em livros", posicao(amigosAtuais, amigo) { it.livrosLidos })
-                    LinhaInfo("Posição em sequência", posicao(amigosAtuais, amigo) { it.sequenciaDias })
+                    LinhaInfo("Posição em tempo", posicao(amigos, amigo) { it.minutosLidos })
+                    LinhaInfo("Posição em livros", posicao(amigos, amigo) { it.livrosLidos })
+                    LinhaInfo("Posição em sequência", posicao(amigos, amigo) { it.sequenciaDias })
                 }
 
                 CartaoInfo(titulo = "Sua nota sobre ${amigo.nome}") {
@@ -398,7 +332,7 @@ fun TelaDetalheAmigo(
 
                 OutlinedButton(
                     onClick = {
-                        AmigosStorage.salvar(context, amigosAtuais.filter { it.id != amigo.id })
+                        aoRemover(amigo)
                         Toast.makeText(
                             context,
                             "${amigo.nome} removido dos amigos",
@@ -516,5 +450,10 @@ private fun CartaoUsuario(
 @Preview(showBackground = true)
 @Composable
 private fun PreviaTelaAmigos() {
-    TelaAmigos()
+    TelaAmigos(
+        amigos = emptyList(),
+        aoAdicionar = {},
+        aoRemover = {},
+        aoAbrirDetalhe = {}
+    )
 }
