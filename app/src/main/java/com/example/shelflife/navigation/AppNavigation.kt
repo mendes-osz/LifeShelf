@@ -40,8 +40,8 @@ private data class ItemBarra(val rota: String, val emoji: String, val rotulo: St
 private val itensBarra = listOf(
     ItemBarra(Rotas.HOME, "🏠", "Home"),
     ItemBarra(Rotas.RANKING, "👑", "Ranking"),
-    ItemBarra(Rotas.AMIGOS, "👥", "Amigos"),
     ItemBarra(Rotas.ESTANTE, "📚", "Estante"),
+    ItemBarra(Rotas.AMIGOS, "👥", "Amigos"),
     ItemBarra(Rotas.PERFIL, "🙂", "Perfil")
 )
 
