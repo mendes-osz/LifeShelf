@@ -21,13 +21,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.shelflife.data.LivrosIniciais
 import com.example.shelflife.model.Amigo
+import com.example.shelflife.model.Livro
 import com.example.shelflife.ui.theme.CorCartao
 import com.example.shelflife.ui.theme.CorDestaque
 import com.example.shelflife.ui.theme.CorFundo
 import com.example.shelflife.ui.theme.CorTextoSecundario
 import com.example.shelflife.ui.theme.screens.AmigosStorage
 import com.example.shelflife.ui.theme.screens.TelaAmigos
+import com.example.shelflife.ui.theme.screens.TelaAnotacao
 import com.example.shelflife.ui.theme.screens.TelaDetalheAmigo
 import com.example.shelflife.ui.theme.screens.TelaDetalhes
 import com.example.shelflife.ui.theme.screens.TelaEstante
@@ -66,6 +69,32 @@ fun AppNavigation() {
         AmigosStorage.salvar(context, amigos)
     }
 
+    val livros = remember {
+        mutableStateListOf<Livro>().apply { addAll(LivrosIniciais) }
+    }
+
+    fun adicionarLivro(titulo: String, autor: String, paginas: Int) {
+        val novoId = (livros.maxOfOrNull { it.id } ?: -1) + 1
+        livros.add(
+            0,
+            Livro(
+                id = novoId,
+                titulo = titulo,
+                autor = autor.ifBlank { "Autor desconhecido" },
+                paginasTotal = paginas
+            )
+        )
+    }
+
+    fun removerLivro(livro: Livro) {
+        livros.removeAll { it.id == livro.id }
+    }
+
+    fun atualizarLivro(livro: Livro) {
+        val indice = livros.indexOfFirst { it.id == livro.id }
+        if (indice != -1) livros[indice] = livro
+    }
+
     val entradaAtual by navController.currentBackStackEntryAsState()
     val rotaAtual = entradaAtual?.destination?.route
 
@@ -101,7 +130,15 @@ fun AppNavigation() {
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
         ) {
-            composable(Rotas.HOME) { TelaInicio() }
+            composable(Rotas.HOME) {
+                TelaInicio(
+                    livros = livros,
+                    amigos = amigos,
+                    aoAdicionarLivro = { titulo -> adicionarLivro(titulo, "", 0) },
+                    aoClicarLivro = { livro -> navController.navigate(Rotas.detalheLivro(livro.id)) },
+                    aoVerRanking = { navController.navigate(Rotas.RANKING) }
+                )
+            }
 
             composable(Rotas.RANKING) {
                 TelaRanking(
@@ -111,12 +148,32 @@ fun AppNavigation() {
                 )
             }
 
+            composable(Rotas.ESTANTE) {
+                TelaEstante(
+                    livros = livros,
+                    aoAdicionar = { titulo, autor, paginas -> adicionarLivro(titulo, autor, paginas) },
+                    aoRemover = { livro -> removerLivro(livro) },
+                    aoClicarLivro = { livro -> navController.navigate(Rotas.detalheLivro(livro.id)) }
+                )
+            }
+
             composable(Rotas.AMIGOS) {
                 TelaAmigos(
                     amigos = amigos,
                     aoAdicionar = { amigo -> adicionarAmigo(amigo) },
                     aoRemover = { amigo -> removerAmigo(amigo) },
                     aoAbrirDetalhe = { id -> navController.navigate(Rotas.detalheAmigo(id)) }
+                )
+            }
+
+            composable(Rotas.PERFIL) {
+                TelaPerfil(
+                    livros = livros,
+                    amigos = amigos,
+                    aoVerEstante = { navController.navigate(Rotas.ESTANTE) },
+                    aoVerAmigos = { navController.navigate(Rotas.AMIGOS) },
+                    aoAbrirLivro = { id -> navController.navigate(Rotas.detalheLivro(id)) },
+                    aoAbrirAmigo = { id -> navController.navigate(Rotas.detalheAmigo(id)) }
                 )
             }
 
@@ -133,21 +190,30 @@ fun AppNavigation() {
                 )
             }
 
-            composable(Rotas.ESTANTE) { TelaEstante() }
-
-            composable(Rotas.PERFIL) {
-                TelaPerfil(
-                    amigos = amigos,
-                    aoVerEstante = { navController.navigate(Rotas.ESTANTE) },
-                    aoVerAmigos = { navController.navigate(Rotas.AMIGOS) },
-                    aoAbrirAmigo = { id -> navController.navigate(Rotas.detalheAmigo(id)) }
+            composable(
+                route = Rotas.DETALHE_LIVRO,
+                arguments = listOf(navArgument("livroId") { type = NavType.IntType })
+            ) { entrada ->
+                val id = entrada.arguments?.getInt("livroId") ?: -1
+                TelaDetalhes(
+                    livro = livros.firstOrNull { it.id == id },
+                    aoAtualizar = { livro -> atualizarLivro(livro) },
+                    aoAbrirAnotacoes = { navController.navigate(Rotas.anotacao(id)) },
+                    aoVoltar = { navController.popBackStack() }
                 )
             }
 
             composable(
-                route = Rotas.DETALHE_LIVRO,
+                route = Rotas.ANOTACAO,
                 arguments = listOf(navArgument("livroId") { type = NavType.IntType })
-            ) { TelaDetalhes() }
+            ) { entrada ->
+                val id = entrada.arguments?.getInt("livroId") ?: -1
+                TelaAnotacao(
+                    livro = livros.firstOrNull { it.id == id },
+                    aoSalvar = { livro -> atualizarLivro(livro) },
+                    aoVoltar = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
