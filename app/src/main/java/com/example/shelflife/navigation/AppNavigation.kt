@@ -1,5 +1,6 @@
 package com.example.shelflife.navigation
 
+import com.example.shelflife.data.LivrosStorage
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
@@ -37,6 +38,7 @@ import com.example.shelflife.ui.theme.screens.TelaEstante
 import com.example.shelflife.ui.theme.screens.TelaInicio
 import com.example.shelflife.ui.theme.screens.TelaPerfil
 import com.example.shelflife.ui.theme.screens.TelaRanking
+import com.example.shelflife.ui.theme.screens.TelaAddLivro
 
 private data class ItemBarra(val rota: String, val emoji: String, val rotulo: String)
 
@@ -70,7 +72,7 @@ fun AppNavigation() {
     }
 
     val livros = remember {
-        mutableStateListOf<Livro>().apply { addAll(LivrosIniciais) }
+        mutableStateListOf<Livro>().apply { addAll(LivrosStorage.carregar(context)) }
     }
 
     fun adicionarLivro(titulo: String, autor: String, paginas: Int) {
@@ -84,15 +86,18 @@ fun AppNavigation() {
                 paginasTotal = paginas
             )
         )
+        LivrosStorage.salvar(context, livros)
     }
 
     fun removerLivro(livro: Livro) {
         livros.removeAll { it.id == livro.id }
+        LivrosStorage.salvar(context, livros)
     }
 
     fun atualizarLivro(livro: Livro) {
         val indice = livros.indexOfFirst { it.id == livro.id }
         if (indice != -1) livros[indice] = livro
+        LivrosStorage.salvar(context, livros)
     }
 
     val entradaAtual by navController.currentBackStackEntryAsState()
@@ -151,9 +156,15 @@ fun AppNavigation() {
             composable(Rotas.ESTANTE) {
                 TelaEstante(
                     livros = livros,
-                    aoAdicionar = { titulo, autor, paginas -> adicionarLivro(titulo, autor, paginas) },
-                    aoRemover = { livro -> removerLivro(livro) },
+                    aoAbrirAddLivro = { navController.navigate(Rotas.ADD_LIVRO) },
                     aoClicarLivro = { livro -> navController.navigate(Rotas.detalheLivro(livro.id)) }
+                )
+            }
+
+            composable(Rotas.ADD_LIVRO) {
+                TelaAddLivro(
+                    aoSalvar = { titulo, autor, paginas -> adicionarLivro(titulo, autor, paginas) },
+                    aoVoltar = { navController.popBackStack() }
                 )
             }
 
@@ -198,6 +209,7 @@ fun AppNavigation() {
                 TelaDetalhes(
                     livro = livros.firstOrNull { it.id == id },
                     aoAtualizar = { livro -> atualizarLivro(livro) },
+                    aoRemover = { livro -> removerLivro(livro) },
                     aoAbrirAnotacoes = { navController.navigate(Rotas.anotacao(id)) },
                     aoVoltar = { navController.popBackStack() }
                 )
