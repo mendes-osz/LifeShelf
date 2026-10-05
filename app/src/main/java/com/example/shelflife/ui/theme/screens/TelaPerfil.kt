@@ -1,5 +1,6 @@
 package com.example.shelflife.ui.theme.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,33 +19,36 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shelflife.R
 import com.example.shelflife.model.Amigo
-import com.example.shelflife.model.Livro
+import com.example.shelflife.model.LivroHome
 
 @Preview(showBackground = true)
 @Composable
 fun TelaPerfil(modifier: Modifier = Modifier) {
     val livros = remember {
         listOf(
-            Livro(0, "1984"),
-            Livro(1, "O Código Da Vinci"),
-            Livro(2, "Labirinto do Fauno"),
-            Livro(3, "Um Conto para o Ser Tempo"),
-            Livro(4, "O Sol e a Estrela")
+            LivroHome(0, "1984", R.drawable.livro_1984),
+            LivroHome(1, "O Código Da Vinci", R.drawable.o_codigo_da_vinci),
+            LivroHome(2, "Labirinto do Fauno", R.drawable.labirinto_do_fauno),
+            LivroHome(3, "Um Conto para o Ser Tempo", R.drawable.um_conto_para_ser_tempo),
+            LivroHome(4, "O Sol e a Estrela", R.drawable.o_sol_e_a_estrela)
         )
     }
 
     val amigos = remember {
         listOf(
-            Amigo(0, "Ovin", 5400, "🐣"),
-            Amigo(1, "Cogumelito", 8550, "🍄"),
-            Amigo(2, "Sapinho", 3000, "🐸")
+            Amigo(0, "Ovin", 5400, "🐣", R.drawable.amigo_0),
+            Amigo(1, "Cogumelito", 8550, "🍄", R.drawable.amigo_1),
+            Amigo(2, "Sapinho", 3000, "🐸", R.drawable.amigo_2)
         )
     }
 
@@ -63,7 +67,12 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
                 .background(Color.DarkGray),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🙂", fontSize = 48.sp)
+            Image(
+                painter = painterResource(id = R.drawable.usuario),
+                contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -154,7 +163,7 @@ fun CabecalhoSecao(titulo: String) {
 }
 
 @Composable
-fun ItemLivro(livro: Livro) {
+fun ItemLivro(livro: LivroHome) {
     Card(
         modifier = Modifier.width(90.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
@@ -170,7 +179,14 @@ fun ItemLivro(livro: Livro) {
                     .background(Color(0xFF6B4F3F)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "📖", fontSize = 28.sp)
+                if (livro.imagemRes != null) {
+                    Image(
+                        painter = painterResource(id = livro.imagemRes),
+                        contentDescription = "Capa de ${livro.titulo}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -202,7 +218,16 @@ fun ItemAmigo(amigo: Amigo) {
                     .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = amigo.emoji, fontSize = 24.sp)
+                if (amigo.imagemRes != null) {
+                    Image(
+                        painter = painterResource(id = amigo.imagemRes),
+                        contentDescription = "Foto de ${amigo.nome}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(text = amigo.emoji, fontSize = 24.sp)
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = amigo.nome, color = Color.White, fontSize = 12.sp)
