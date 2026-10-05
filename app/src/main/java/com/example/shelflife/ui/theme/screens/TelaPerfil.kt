@@ -1,5 +1,6 @@
 package com.example.shelflife.ui.theme.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,35 +19,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shelflife.R
 import com.example.shelflife.model.Amigo
-import com.example.shelflife.model.Livro
+import com.example.shelflife.model.LivroHome
 
-@Preview(showBackground = true)
 @Composable
-fun TelaPerfil(modifier: Modifier = Modifier) {
+fun TelaPerfil(
+    amigos: List<Amigo>,
+    aoVerEstante: () -> Unit,
+    aoVerAmigos: () -> Unit,
+    aoAbrirAmigo: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val livros = remember {
         listOf(
-            Livro(0, "1984"),
-            Livro(1, "O Código Da Vinci"),
-            Livro(2, "Labirinto do Fauno"),
-            Livro(3, "Um Conto para o Ser Tempo"),
-            Livro(4, "O Sol e a Estrela")
+            LivroHome(0, "1984", R.drawable.livro_1984),
+            LivroHome(1, "O Código Da Vinci", R.drawable.o_codigo_da_vinci),
+            LivroHome(2, "Labirinto do Fauno", R.drawable.labirinto_do_fauno),
+            LivroHome(3, "Um Conto para o Ser Tempo", R.drawable.um_conto_para_ser_tempo),
+            LivroHome(4, "O Sol e a Estrela", R.drawable.o_sol_e_a_estrela)
         )
     }
 
-    val amigos = remember {
-        listOf(
-            Amigo(0, "Ovin", 5400, "🐣"),
-            Amigo(1, "Cogumelito", 8550, "🍄"),
-            Amigo(2, "Sapinho", 3000, "🐸")
-        )
-    }
+    val minutosTotais = 142 * 60 + 30
+    val amigosSuperados = amigos.count { it.minutosLidos < minutosTotais }
 
     Column(
         modifier = modifier
@@ -63,7 +67,12 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
                 .background(Color.DarkGray),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🙂", fontSize = 48.sp)
+            Image(
+                painter = painterResource(id = R.drawable.usuario),
+                contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -83,7 +92,7 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
             fontSize = 13.sp
         )
         Text(
-            text = "142h 30min",
+            text = "${minutosTotais / 60}h ${minutosTotais % 60}min",
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
@@ -91,7 +100,7 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CabecalhoSecao(titulo = "Livros mais lidos")
+        CabecalhoSecao(titulo = "Livros mais lidos", aoClicar = aoVerEstante)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow {
             items(livros, key = { it.id }) { livro ->
@@ -123,16 +132,19 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CabecalhoSecao(titulo = "Amigos")
+        CabecalhoSecao(titulo = "Amigos", aoClicar = aoVerAmigos)
         Text(
-            text = "Você leu mais que 2 dos seus 3 amigos",
+            text = if (amigos.isEmpty())
+                "Adicione amigos na aba Amigos para comparar sua leitura."
+            else
+                "Você leu mais que $amigosSuperados dos seus ${amigos.size} amigos",
             color = Color(0xFFB0A79E),
             fontSize = 13.sp
         )
         Spacer(modifier = Modifier.height(12.dp))
         LazyRow {
             items(amigos, key = { it.id }) { amigo ->
-                ItemAmigo(amigo = amigo)
+                ItemAmigo(amigo = amigo, aoClicar = { aoAbrirAmigo(amigo.id) })
                 Spacer(modifier = Modifier.width(12.dp))
             }
         }
@@ -140,21 +152,21 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CabecalhoSecao(titulo: String) {
+fun CabecalhoSecao(titulo: String, aoClicar: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = titulo, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        IconButton(onClick = { }) {
+        IconButton(onClick = aoClicar) {
             Text(text = "→", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun ItemLivro(livro: Livro) {
+fun ItemLivro(livro: LivroHome) {
     Card(
         modifier = Modifier.width(90.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
@@ -170,7 +182,14 @@ fun ItemLivro(livro: Livro) {
                     .background(Color(0xFF6B4F3F)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "📖", fontSize = 28.sp)
+                if (livro.imagemRes != null) {
+                    Image(
+                        painter = painterResource(id = livro.imagemRes),
+                        contentDescription = "Capa de ${livro.titulo}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -186,8 +205,9 @@ fun ItemLivro(livro: Livro) {
 }
 
 @Composable
-fun ItemAmigo(amigo: Amigo) {
+fun ItemAmigo(amigo: Amigo, aoClicar: () -> Unit) {
     Card(
+        onClick = aoClicar,
         modifier = Modifier.width(80.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
     ) {
@@ -202,10 +222,34 @@ fun ItemAmigo(amigo: Amigo) {
                     .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = amigo.emoji, fontSize = 24.sp)
+                if (amigo.imagemRes != null) {
+                    Image(
+                        painter = painterResource(id = amigo.imagemRes),
+                        contentDescription = "Foto de ${amigo.nome}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Text(text = amigo.emoji, fontSize = 24.sp)
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(text = amigo.nome, color = Color.White, fontSize = 12.sp)
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviaTelaPerfil() {
+    TelaPerfil(
+        amigos = listOf(
+            Amigo(0, "Ovin", 5400, "🐣", R.drawable.amigo_0),
+            Amigo(1, "Cogumelito", 8550, "🍄", R.drawable.amigo_1),
+            Amigo(2, "Sapinho", 3000, "🐸", R.drawable.amigo_2)
+        ),
+        aoVerEstante = {},
+        aoVerAmigos = {},
+        aoAbrirAmigo = {}
+    )
 }
