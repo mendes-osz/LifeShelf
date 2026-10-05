@@ -33,6 +33,7 @@ import com.example.shelflife.util.formatarMinutos
 fun TelaDetalhes(
     livro: Livro?,
     aoAtualizar: (Livro) -> Unit,
+    aoRemover: (Livro) -> Unit,
     aoAbrirAnotacoes: () -> Unit,
     aoVoltar: () -> Unit,
     modifier: Modifier = Modifier
@@ -44,6 +45,7 @@ fun TelaDetalhes(
     }
     var atual by remember(livro?.id) { mutableStateOf(livro?.paginasLidas?.toString() ?: "") }
     var minutos by remember(livro?.id) { mutableStateOf("") }
+    var confirmarRemocao by remember(livro?.id) { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -260,7 +262,34 @@ fun TelaDetalhes(
                     )
                 }
 
+                OutlinedButton(
+                    onClick = { confirmarRemocao = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(text = "Remover livro", color = Color.White)
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (confirmarRemocao) {
+                    AlertDialog(
+                        onDismissRequest = { confirmarRemocao = false },
+                        title = { Text("Remover livro?") },
+                        text = { Text("\"${livro.titulo}\" sairá da sua estante.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                confirmarRemocao = false
+                                aoRemover(livro)
+                                aoVoltar()
+                            }) { Text("Remover") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { confirmarRemocao = false }) { Text("Cancelar") }
+                        }
+                    )
+                }
             }
         }
     }
@@ -272,6 +301,7 @@ private fun PreviaTelaDetalhes() {
     TelaDetalhes(
         livro = LivrosIniciais.first(),
         aoAtualizar = {},
+        aoRemover = {},
         aoAbrirAnotacoes = {},
         aoVoltar = {}
     )
