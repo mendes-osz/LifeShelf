@@ -7,14 +7,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,35 +26,42 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shelflife.R
+import com.example.shelflife.data.LivrosIniciais
 import com.example.shelflife.model.Amigo
-import com.example.shelflife.model.LivroHome
+import com.example.shelflife.model.Livro
+import com.example.shelflife.ui.theme.CorCartao
+import com.example.shelflife.ui.theme.CorFundo
+import com.example.shelflife.ui.theme.CorTextoSecundario
+import com.example.shelflife.ui.theme.components.BarraProgresso
+import com.example.shelflife.ui.theme.components.CapaLivro
+import com.example.shelflife.util.MINUTOS_POR_NIVEL
+import com.example.shelflife.util.NOME_USUARIO
+import com.example.shelflife.util.formatarMinutos
 
 @Composable
 fun TelaPerfil(
+    livros: List<Livro>,
     amigos: List<Amigo>,
     aoVerEstante: () -> Unit,
     aoVerAmigos: () -> Unit,
+    aoAbrirLivro: (Int) -> Unit,
     aoAbrirAmigo: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val livros = remember {
-        listOf(
-            LivroHome(0, "1984", R.drawable.livro_1984),
-            LivroHome(1, "O Código Da Vinci", R.drawable.o_codigo_da_vinci),
-            LivroHome(2, "Labirinto do Fauno", R.drawable.labirinto_do_fauno),
-            LivroHome(3, "Um Conto para o Ser Tempo", R.drawable.um_conto_para_ser_tempo),
-            LivroHome(4, "O Sol e a Estrela", R.drawable.o_sol_e_a_estrela)
-        )
-    }
-
-    val minutosTotais = 142 * 60 + 30
+    val minutosTotais = livros.sumOf { it.minutosLidos }
+    val maisLidos = livros
+        .filter { it.minutosLidos > 0 }
+        .sortedByDescending { it.minutosLidos }
+        .take(5)
+    val nivel = minutosTotais / MINUTOS_POR_NIVEL + 1
+    val minutosNoNivel = minutosTotais % MINUTOS_POR_NIVEL
     val amigosSuperados = amigos.count { it.minutosLidos < minutosTotais }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .background(Color(0xFF4E3B31))
+            .background(CorFundo)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -78,7 +83,7 @@ fun TelaPerfil(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Nome do Usuário",
+            text = NOME_USUARIO,
             color = Color.White,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
@@ -88,11 +93,11 @@ fun TelaPerfil(
 
         Text(
             text = "Tempo total lendo livros",
-            color = Color(0xFFB0A79E),
+            color = CorTextoSecundario,
             fontSize = 13.sp
         )
         Text(
-            text = "${minutosTotais / 60}h ${minutosTotais % 60}min",
+            text = formatarMinutos(minutosTotais),
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
@@ -102,33 +107,44 @@ fun TelaPerfil(
 
         CabecalhoSecao(titulo = "Livros mais lidos", aoClicar = aoVerEstante)
         Spacer(modifier = Modifier.height(8.dp))
-        LazyRow {
-            items(livros, key = { it.id }) { livro ->
-                ItemLivro(livro = livro)
-                Spacer(modifier = Modifier.width(12.dp))
+        if (maisLidos.isEmpty()) {
+            Text(
+                text = "Registre sua leitura nos detalhes de um livro para ele aparecer aqui.",
+                color = CorTextoSecundario,
+                fontSize = 13.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            LazyRow(modifier = Modifier.fillMaxWidth()) {
+                items(maisLidos, key = { it.id }) { livro ->
+                    ItemLivro(livro = livro, aoClicar = { aoAbrirLivro(livro.id) })
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(text = "Nível: 3", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "Nível: $nivel",
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.height(8.dp))
-
-        Box(
+        BarraProgresso(
+            progresso = minutosNoNivel.toFloat() / MINUTOS_POR_NIVEL,
+            altura = 20.dp,
+            corTrilho = CorCartao
+        )
+        Text(
+            text = "Faltam ${formatarMinutos(MINUTOS_POR_NIVEL - minutosNoNivel)} para o nível ${nivel + 1}",
+            color = CorTextoSecundario,
+            fontSize = 12.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFF3A2C24))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.5f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFC08552))
-            )
-        }
+                .padding(top = 4.dp)
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -138,11 +154,12 @@ fun TelaPerfil(
                 "Adicione amigos na aba Amigos para comparar sua leitura."
             else
                 "Você leu mais que $amigosSuperados dos seus ${amigos.size} amigos",
-            color = Color(0xFFB0A79E),
-            fontSize = 13.sp
+            color = CorTextoSecundario,
+            fontSize = 13.sp,
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
-        LazyRow {
+        LazyRow(modifier = Modifier.fillMaxWidth()) {
             items(amigos, key = { it.id }) { amigo ->
                 ItemAmigo(amigo = amigo, aoClicar = { aoAbrirAmigo(amigo.id) })
                 Spacer(modifier = Modifier.width(12.dp))
@@ -166,31 +183,20 @@ fun CabecalhoSecao(titulo: String, aoClicar: () -> Unit) {
 }
 
 @Composable
-fun ItemLivro(livro: LivroHome) {
+fun ItemLivro(livro: Livro, aoClicar: () -> Unit) {
     Card(
+        onClick = aoClicar,
         modifier = Modifier.width(90.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
+        colors = CardDefaults.cardColors(containerColor = CorCartao)
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 74.dp, height = 100.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF6B4F3F)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (livro.imagemRes != null) {
-                    Image(
-                        painter = painterResource(id = livro.imagemRes),
-                        contentDescription = "Capa de ${livro.titulo}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
+            CapaLivro(
+                livro = livro,
+                modifier = Modifier.size(width = 74.dp, height = 100.dp)
+            )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = livro.titulo,
@@ -209,7 +215,7 @@ fun ItemAmigo(amigo: Amigo, aoClicar: () -> Unit) {
     Card(
         onClick = aoClicar,
         modifier = Modifier.width(80.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
+        colors = CardDefaults.cardColors(containerColor = CorCartao)
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
@@ -243,6 +249,7 @@ fun ItemAmigo(amigo: Amigo, aoClicar: () -> Unit) {
 @Composable
 private fun PreviaTelaPerfil() {
     TelaPerfil(
+        livros = LivrosIniciais,
         amigos = listOf(
             Amigo(0, "Ovin", 5400, "🐣", R.drawable.amigo_0),
             Amigo(1, "Cogumelito", 8550, "🍄", R.drawable.amigo_1),
@@ -250,6 +257,7 @@ private fun PreviaTelaPerfil() {
         ),
         aoVerEstante = {},
         aoVerAmigos = {},
+        aoAbrirLivro = {},
         aoAbrirAmigo = {}
     )
 }
