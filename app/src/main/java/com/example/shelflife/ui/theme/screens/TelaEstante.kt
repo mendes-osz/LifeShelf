@@ -1,18 +1,17 @@
 package com.example.shelflife.ui.theme.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,21 +20,30 @@ import androidx.compose.ui.unit.sp
 import com.example.shelflife.data.LivrosIniciais
 import com.example.shelflife.model.Livro
 import com.example.shelflife.ui.theme.CorCartao
+import com.example.shelflife.ui.theme.CorDestaque
 import com.example.shelflife.ui.theme.CorFundo
 import com.example.shelflife.ui.theme.CorTextoSecundario
 import com.example.shelflife.ui.theme.components.BarraProgresso
-import com.example.shelflife.ui.theme.components.CampoTexto
 import com.example.shelflife.ui.theme.components.CapaLivro
 
 @Composable
 fun TelaEstante(
     livros: List<Livro>,
-    aoAdicionar: (titulo: String, autor: String, paginas: Int) -> Unit,
-    aoRemover: (Livro) -> Unit,
+    aoAbrirAddLivro: () -> Unit,
     aoClicarLivro: (Livro) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var livroParaRemover by remember { mutableStateOf<Livro?>(null) }
+    var busca by remember { mutableStateOf("") }
+
+    val termo = busca.trim()
+    val livrosFiltrados = if (termo.isEmpty()) {
+        livros
+    } else {
+        livros.filter {
+            it.titulo.contains(termo, ignoreCase = true) ||
+                    it.autor.contains(termo, ignoreCase = true)
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -59,10 +67,54 @@ fun TelaEstante(
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                FormularioNovoLivro(aoAdicionar = aoAdicionar)
+                Button(
+                    onClick = aoAbrirAddLivro,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CorDestaque,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Adicionar livro")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = busca,
+                    onValueChange = { if (it.length <= 30) busca = it },
+                    label = { Text(text = "Buscar na estante") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    },
+                    trailingIcon = {
+                        if (busca.isNotEmpty()) {
+                            IconButton(onClick = { busca = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Limpar busca",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CorDestaque,
+                        unfocusedBorderColor = CorTextoSecundario,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = CorDestaque,
+                        unfocusedLabelColor = CorTextoSecundario,
+                        cursorColor = CorDestaque
+                    )
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Seus livros (${livros.size})",
+                    text = "Seus livros (${livrosFiltrados.size})",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -73,103 +125,29 @@ fun TelaEstante(
         if (livros.isEmpty()) {
             item {
                 Text(
-                    text = "Sua estante está vazia. Adicione um livro acima.",
+                    text = "Sua estante está vazia.",
+                    color = CorTextoSecundario,
+                    fontSize = 14.sp
+                )
+            }
+        } else if (livrosFiltrados.isEmpty()) {
+            item {
+                Text(
+                    text = "Nenhum livro encontrado para \"$termo\".",
                     color = CorTextoSecundario,
                     fontSize = 14.sp
                 )
             }
         } else {
-            items(livros, key = { it.id }) { livro ->
-                ItemLivroEstante(
-                    livro = livro,
-                    aoClicar = { aoClicarLivro(livro) },
-                    aoRemover = { livroParaRemover = livro }
-                )
-            }
-        }
-    }
-
-    livroParaRemover?.let { livro ->
-        AlertDialog(
-            onDismissRequest = { livroParaRemover = null },
-            title = { Text("Remover livro?") },
-            text = { Text("\"${livro.titulo}\" sairá da sua estante.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    aoRemover(livro)
-                    livroParaRemover = null
-                }) { Text("Remover") }
-            },
-            dismissButton = {
-                TextButton(onClick = { livroParaRemover = null }) { Text("Cancelar") }
-            }
-        )
-    }
-}
-
-@Composable
-private fun FormularioNovoLivro(aoAdicionar: (String, String, Int) -> Unit) {
-    val context = LocalContext.current
-    var titulo by remember { mutableStateOf("") }
-    var autor by remember { mutableStateOf("") }
-    var paginas by remember { mutableStateOf("") }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = CorCartao)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Adicionar livro",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-            CampoTexto(valor = titulo, aoMudar = { titulo = it }, rotulo = "Título")
-            CampoTexto(valor = autor, aoMudar = { autor = it }, rotulo = "Autor (opcional)")
-            CampoTexto(
-                valor = paginas,
-                aoMudar = { paginas = it.filter(Char::isDigit).take(5) },
-                rotulo = "Total de páginas (opcional)",
-                numerico = true
-            )
-            Button(
-                onClick = {
-                    if (titulo.isBlank()) {
-                        Toast.makeText(context, "Digite o título do livro.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        aoAdicionar(titulo.trim(), autor.trim(), paginas.toIntOrNull() ?: 0)
-                        Toast.makeText(
-                            context,
-                            "Livro \"${titulo.trim()}\" adicionado!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        titulo = ""
-                        autor = ""
-                        paginas = ""
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = com.example.shelflife.ui.theme.CorDestaque,
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Adicionar livro")
+            items(livrosFiltrados, key = { it.id }) { livro ->
+                ItemLivroEstante(livro = livro, aoClicar = { aoClicarLivro(livro) })
             }
         }
     }
 }
 
 @Composable
-private fun ItemLivroEstante(
-    livro: Livro,
-    aoClicar: () -> Unit,
-    aoRemover: () -> Unit
-) {
+private fun ItemLivroEstante(livro: Livro, aoClicar: () -> Unit) {
     val progresso = if (livro.paginasTotal > 0) {
         livro.paginasLidas.toFloat() / livro.paginasTotal
     } else {
@@ -221,14 +199,6 @@ private fun ItemLivroEstante(
                     )
                 }
             }
-
-            IconButton(onClick = aoRemover) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Remover ${livro.titulo}",
-                    tint = Color.White
-                )
-            }
         }
     }
 }
@@ -238,8 +208,7 @@ private fun ItemLivroEstante(
 private fun PreviaTelaEstante() {
     TelaEstante(
         livros = LivrosIniciais,
-        aoAdicionar = { _, _, _ -> },
-        aoRemover = {},
+        aoAbrirAddLivro = {},
         aoClicarLivro = {}
     )
 }

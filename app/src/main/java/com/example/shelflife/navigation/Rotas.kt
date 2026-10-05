@@ -1,6 +1,8 @@
 package com.example.shelflife.navigation
 
 object Rotas {
+
+    const val ADD_LIVRO = "add_livro"
     const val HOME = "home"
     const val RANKING = "ranking"
     const val AMIGOS = "amigos"
