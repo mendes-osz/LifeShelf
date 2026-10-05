@@ -31,9 +31,14 @@ import com.example.shelflife.R
 import com.example.shelflife.model.Amigo
 import com.example.shelflife.model.LivroHome
 
-@Preview(showBackground = true)
 @Composable
-fun TelaPerfil(modifier: Modifier = Modifier) {
+fun TelaPerfil(
+    amigos: List<Amigo>,
+    aoVerEstante: () -> Unit,
+    aoVerAmigos: () -> Unit,
+    aoAbrirAmigo: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val livros = remember {
         listOf(
             LivroHome(0, "1984", R.drawable.livro_1984),
@@ -44,13 +49,8 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
         )
     }
 
-    val amigos = remember {
-        listOf(
-            Amigo(0, "Ovin", 5400, "🐣", R.drawable.amigo_0),
-            Amigo(1, "Cogumelito", 8550, "🍄", R.drawable.amigo_1),
-            Amigo(2, "Sapinho", 3000, "🐸", R.drawable.amigo_2)
-        )
-    }
+    val minutosTotais = 142 * 60 + 30
+    val amigosSuperados = amigos.count { it.minutosLidos < minutosTotais }
 
     Column(
         modifier = modifier
@@ -92,7 +92,7 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
             fontSize = 13.sp
         )
         Text(
-            text = "142h 30min",
+            text = "${minutosTotais / 60}h ${minutosTotais % 60}min",
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
@@ -100,7 +100,7 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CabecalhoSecao(titulo = "Livros mais lidos")
+        CabecalhoSecao(titulo = "Livros mais lidos", aoClicar = aoVerEstante)
         Spacer(modifier = Modifier.height(8.dp))
         LazyRow {
             items(livros, key = { it.id }) { livro ->
@@ -132,16 +132,19 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        CabecalhoSecao(titulo = "Amigos")
+        CabecalhoSecao(titulo = "Amigos", aoClicar = aoVerAmigos)
         Text(
-            text = "Você leu mais que 2 dos seus 3 amigos",
+            text = if (amigos.isEmpty())
+                "Adicione amigos na aba Amigos para comparar sua leitura."
+            else
+                "Você leu mais que $amigosSuperados dos seus ${amigos.size} amigos",
             color = Color(0xFFB0A79E),
             fontSize = 13.sp
         )
         Spacer(modifier = Modifier.height(12.dp))
         LazyRow {
             items(amigos, key = { it.id }) { amigo ->
-                ItemAmigo(amigo = amigo)
+                ItemAmigo(amigo = amigo, aoClicar = { aoAbrirAmigo(amigo.id) })
                 Spacer(modifier = Modifier.width(12.dp))
             }
         }
@@ -149,14 +152,14 @@ fun TelaPerfil(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CabecalhoSecao(titulo: String) {
+fun CabecalhoSecao(titulo: String, aoClicar: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = titulo, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        IconButton(onClick = { }) {
+        IconButton(onClick = aoClicar) {
             Text(text = "→", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
@@ -202,8 +205,9 @@ fun ItemLivro(livro: LivroHome) {
 }
 
 @Composable
-fun ItemAmigo(amigo: Amigo) {
+fun ItemAmigo(amigo: Amigo, aoClicar: () -> Unit) {
     Card(
+        onClick = aoClicar,
         modifier = Modifier.width(80.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF3A2C24))
     ) {
@@ -233,4 +237,19 @@ fun ItemAmigo(amigo: Amigo) {
             Text(text = amigo.nome, color = Color.White, fontSize = 12.sp)
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviaTelaPerfil() {
+    TelaPerfil(
+        amigos = listOf(
+            Amigo(0, "Ovin", 5400, "🐣", R.drawable.amigo_0),
+            Amigo(1, "Cogumelito", 8550, "🍄", R.drawable.amigo_1),
+            Amigo(2, "Sapinho", 3000, "🐸", R.drawable.amigo_2)
+        ),
+        aoVerEstante = {},
+        aoVerAmigos = {},
+        aoAbrirAmigo = {}
+    )
 }

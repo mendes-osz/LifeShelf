@@ -78,9 +78,8 @@ fun AppNavigation() {
                         selected = rotaAtual == item.rota,
                         onClick = {
                             navController.navigate(item.rota) {
-                                popUpTo(Rotas.HOME) { saveState = true }
+                                popUpTo(Rotas.HOME)
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         },
                         icon = { Text(text = item.emoji, fontSize = 20.sp) },
@@ -135,7 +134,15 @@ fun AppNavigation() {
             }
 
             composable(Rotas.ESTANTE) { TelaEstante() }
-            composable(Rotas.PERFIL) { TelaPerfil() }
+
+            composable(Rotas.PERFIL) {
+                TelaPerfil(
+                    amigos = amigos,
+                    aoVerEstante = { navController.navigate(Rotas.ESTANTE) },
+                    aoVerAmigos = { navController.navigate(Rotas.AMIGOS) },
+                    aoAbrirAmigo = { id -> navController.navigate(Rotas.detalheAmigo(id)) }
+                )
+            }
 
             composable(
                 route = Rotas.DETALHE_LIVRO,
